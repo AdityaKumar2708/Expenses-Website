@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Expense Report</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Sans+3:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Company Expense Portal</p>
+          <h1>Expenses Report</h1>
+        </div>
+        <div class="topbar-actions">
+          <span class="status-pill" id="firebaseStatus">System setup pending</span>
+          <button id="logoutButton" class="ghost-button hidden" type="button">Log out</button>
+        </div>
+      </header>
+
+      <main class="app-grid">
+        <section class="auth-panel" id="authPanel">
+          <div class="panel-card">
+            <p class="section-label">Account Access</p>
+            <h2>Sign in with email</h2>
+            <p class="muted">Your expenses will be stored securely against your account.</p>
+
+            <form id="authForm" class="stack-form">
+              <label>
+                <span>Email</span>
+                <input id="authEmail" name="email" type="email" autocomplete="email" required />
+              </label>
+              <label>
+                <span>Password</span>
+                <input
+                  id="authPassword"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  minlength="6"
+                  required
+                />
+              </label>
+              <div class="auth-actions">
+                <button id="loginButton" type="submit">Login</button>
+                <button id="signupButton" class="secondary-button" type="button">Create account</button>
+              </div>
+              <p id="authMessage" class="message-line" aria-live="polite"></p>
+            </form>
+
+            <div class="setup-note">
+              <strong>Setup note:</strong>
+              secure sign-in and report storage must be configured before this app goes live.
+            </div>
+          </div>
+        </section>
+
+        <section class="sheet-panel hidden" id="sheetPanel">
+          <div class="sheet-frame">
+            <div class="sheet-title-row">
+              <div class="brand-box">
+                <input id="companyName" class="brand-input" type="text" value="SCENTMATIC" />
+              </div>
+              <div class="title-box">EXPENSES REPORT</div>
+              <div class="office-box">FOR OFFICE USE ONLY</div>
+            </div>
+
+            <div class="employee-strip">
+              <div class="employee-grid">
+                <label>
+                  <span>Name</span>
+                  <input id="employeeName" type="text" placeholder="Employee name" />
+                </label>
+                <label>
+                  <span>Position</span>
+                  <input id="employeePosition" type="text" placeholder="Position" />
+                </label>
+                <label>
+                  <span>City</span>
+                  <input id="employeeCity" type="text" placeholder="City" />
+                </label>
+                <label>
+                  <span>Report Month</span>
+                  <input id="reportMonth" type="month" />
+                </label>
+              </div>
+              <div class="sheet-actions">
+                <button id="saveReportButton" type="button">Save report</button>
+                <button id="newRowButton" class="secondary-button" type="button">Add row</button>
+                <button id="downloadButton" class="ghost-button" type="button">Download PDF</button>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="expense-table">
+                <colgroup>
+                  <col class="col-date" />
+                  <col class="col-vehicle" />
+                  <col class="col-route" />
+                  <col class="col-amount" />
+                  <col class="col-amount" />
+                  <col class="col-amount" />
+                  <col class="col-work" />
+                  <col class="col-service" />
+                  <col class="col-total" />
+                  <col class="col-proof" />
+                  <col class="col-action" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Vehicle</th>
+                    <th>From Where to Where</th>
+                    <th>Transport</th>
+                    <th>Hotel</th>
+                    <th>Meals</th>
+                    <th>Where Work</th>
+                    <th>Service Type</th>
+                    <th>Total</th>
+                    <th>Proof</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="expenseTableBody"></tbody>
+                <tfoot>
+                  <tr class="totals-row">
+                    <td colspan="3">Total</td>
+                    <td id="transportTotal">Rs 0.00</td>
+                    <td id="hotelTotal">Rs 0.00</td>
+                    <td id="mealsTotal">Rs 0.00</td>
+                    <td colspan="2"></td>
+                    <td id="grandTotal">Rs 0.00</td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div class="footer-grid">
+              <label class="note-block">
+                <span>Note</span>
+                <textarea id="reportNote" rows="4" placeholder="Add note for finance or manager"></textarea>
+              </label>
+
+              <div class="summary-card">
+                <div class="summary-row">
+                  <span>SubTotal</span>
+                  <strong id="summarySubtotal">Rs 0.00</strong>
+                </div>
+                <div class="summary-row">
+                  <span>Cash Advance</span>
+                  <input id="cashAdvance" type="number" min="0" step="0.01" value="0" />
+                </div>
+                <div class="summary-row total-due">
+                  <span>Total Claim</span>
+                  <strong id="summaryClaim">Rs 0.00</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="saved-reports">
+              <div class="saved-reports-header">
+                <div>
+                  <p class="section-label">Saved Reports</p>
+                  <h3>Your saved reports</h3>
+                </div>
+                <button id="refreshReportsButton" class="ghost-button" type="button">Refresh</button>
+              </div>
+              <div id="savedReportsList" class="report-list"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
