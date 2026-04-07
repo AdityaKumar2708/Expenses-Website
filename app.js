@@ -1,3 +1,25 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  collection,
+  getDocs,
+  deleteDoc,
+  orderBy,
+  query
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+
 import { firebaseConfig } from "./firebase-config.js";
 
 const defaultRows = [
@@ -147,31 +169,25 @@ function hasFirebaseConfig() {
 }
 
 async function initializeFirebase() {
+  console.log("Initializing Firebase...");
   if (!hasFirebaseConfig()) {
     elements.firebaseStatus.textContent = "System setup pending";
     elements.authMessage.textContent = "Sign-in and storage setup is required before login is available.";
+    console.log("Firebase READY");
     return;
   }
 
-  const [
-    { initializeApp },
-    authModule,
-    firestoreModule,
-  ] = await Promise.all([
-    import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
-    import("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js"),
-    import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"),
-  ]);
+  
 
   const app = initializeApp(firebaseConfig);
 
-  state.auth = authModule.getAuth(app);
-  state.db = firestoreModule.getFirestore(app);
+  state.auth = getAuth(app);
+  state.db = getFirestore(app);
   state.firebaseReady = true;
   elements.firebaseStatus.textContent = "System ready";
   elements.firebaseStatus.classList.add("ready");
 
-  authModule.onAuthStateChanged(state.auth, async (user) => {
+  onAuthStateChanged(state.auth, async (user) => {
     state.user = user;
     toggleAuthenticatedView(Boolean(user));
 
@@ -193,7 +209,7 @@ async function initializeFirebase() {
     const password = elements.authPassword.value.trim();
 
     try {
-      await authModule.signInWithEmailAndPassword(state.auth, email, password);
+      await signInWithEmailAndPassword(state.auth, email, password);
       elements.authMessage.textContent = "Logged in.";
     } catch (error) {
       elements.authMessage.textContent = error.message;
@@ -205,7 +221,7 @@ async function initializeFirebase() {
     const password = elements.authPassword.value.trim();
 
     try {
-      await authModule.createUserWithEmailAndPassword(state.auth, email, password);
+      await createUserWithEmailAndPassword(state.auth, email, password);
       elements.authMessage.textContent = "Account created.";
     } catch (error) {
       elements.authMessage.textContent = error.message;
@@ -213,11 +229,8 @@ async function initializeFirebase() {
   });
 
   elements.logoutButton.addEventListener("click", async () => {
-    await authModule.signOut(state.auth);
+    await signOut(state.auth);
   });
-
-  state.authModule = authModule;
-  state.firestoreModule = firestoreModule;
 }
 
 function toggleAuthenticatedView(isAuthenticated) {
@@ -308,7 +321,6 @@ async function saveReport() {
     return;
   }
 
-  const { doc, setDoc, collection } = state.firestoreModule;
   const payload = reportPayload();
   const reportRef =
     state.currentReportId
@@ -325,7 +337,6 @@ async function loadReports() {
     return;
   }
 
-  const { collection, getDocs, orderBy, query } = state.firestoreModule;
   const reportsQuery = query(
     collection(state.db, "users", state.user.uid, "reports"),
     orderBy("updatedAt", "desc"),
@@ -343,7 +354,6 @@ async function deleteReport(id) {
     return;
   }
 
-  const { deleteDoc, doc } = state.firestoreModule;
   await deleteDoc(doc(state.db, "users", state.user.uid, "reports", id));
 
   if (state.currentReportId === id) {
