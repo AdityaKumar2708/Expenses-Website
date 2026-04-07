@@ -356,7 +356,7 @@ function reportPayload() {
 
 function loadReportIntoForm(report) {
   state.currentReportId = report.id;
-  elements.companyName.value = report.companyName ?? "SCENTMATIC";
+  elements.companyName.value = report.companyName ?? "";
   elements.employeeName.value = report.employeeName ?? "";
   elements.employeePosition.value = report.position ?? "";
   elements.employeeCity.value = report.city ?? "";
