@@ -91,6 +91,7 @@ const elements = {
   downloadButton: document.querySelector("#downloadButton"),
   refreshReportsButton: document.querySelector("#refreshReportsButton"),
   savedReportsList: document.querySelector("#savedReportsList"),
+  sheetMessage: document.querySelector("#sheetMessage"),
 };
 
 const money = new Intl.NumberFormat("en-IN", {
@@ -148,6 +149,12 @@ function authErrorMessage(error) {
       return "Invalid email or password.";
     default:
       return error?.message ?? "Something went wrong while signing in.";
+  }
+}
+
+function setSheetMessage(message = "") {
+  if (elements.sheetMessage) {
+    elements.sheetMessage.textContent = message;
   }
 }
 
@@ -372,6 +379,7 @@ function loadReportIntoForm(report) {
 
 async function saveReport() {
   if (!state.firebaseReady || !state.user) {
+    setSheetMessage("Please sign in before saving a report.");
     return;
   }
 
@@ -384,6 +392,7 @@ async function saveReport() {
   await setDoc(reportRef, payload, { merge: true });
   state.currentReportId = reportRef.id;
   await loadReports();
+  setSheetMessage("Report saved.");
 }
 
 async function loadReports() {
@@ -808,16 +817,19 @@ elements.expenseTableBody.addEventListener("click", (event) => {
 elements.newRowButton.addEventListener("click", () => addRow());
 elements.saveReportButton.addEventListener("click", async () => {
   try {
+    setSheetMessage("Saving report...");
     await saveReport();
   } catch (error) {
-    elements.authMessage.textContent = error.message;
+    setSheetMessage(error?.message ?? "Unable to save report.");
   }
 });
 elements.refreshReportsButton.addEventListener("click", async () => {
   try {
+    setSheetMessage("Refreshing saved reports...");
     await loadReports();
+    setSheetMessage("Saved reports refreshed.");
   } catch (error) {
-    elements.authMessage.textContent = error.message;
+    setSheetMessage(error?.message ?? "Unable to refresh reports.");
   }
 });
 elements.downloadButton.addEventListener("click", downloadCurrentReport);
@@ -830,5 +842,6 @@ setAuthBusy(true);
 initializeFirebase().catch((error) => {
   elements.firebaseStatus.textContent = "System error";
   elements.authMessage.textContent = error.message;
+  setSheetMessage(error.message);
   setAuthBusy(true);
 });
