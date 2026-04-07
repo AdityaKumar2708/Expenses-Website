@@ -5,7 +5,9 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
-  signOut
+  signOut,
+  setPersistence,
+  browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 import {
@@ -52,6 +54,7 @@ const defaultRows = [
 const state = {
   user: null,
   firebaseReady: false,
+  authBusy: false,
   auth: null,
   db: null,
   rows: structuredClone(defaultRows),
@@ -113,6 +116,39 @@ function slugify(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "") || "expense-report";
+}
+
+function setAuthBusy(isBusy) {
+  state.authBusy = isBusy;
+  elements.authEmail.disabled = isBusy || !state.firebaseReady;
+  elements.authPassword.disabled = isBusy || !state.firebaseReady;
+  elements.signupButton.disabled = isBusy || !state.firebaseReady;
+  elements.authForm.querySelector('button[type="submit"]').disabled = isBusy || !state.firebaseReady;
+  elements.logoutButton.disabled = isBusy || !state.firebaseReady;
+}
+
+function authErrorMessage(error) {
+  const code = error?.code ?? "";
+
+  switch (code) {
+    case "auth/invalid-email":
+      return "Please enter a valid email address.";
+    case "auth/missing-password":
+      return "Please enter your password.";
+    case "auth/weak-password":
+      return "Password must be at least 6 characters.";
+    case "auth/email-already-in-use":
+      return "That email is already registered. Try logging in instead.";
+    case "auth/operation-not-allowed":
+      return "Email/password sign-in is not enabled in Firebase Authentication.";
+    case "auth/unauthorized-domain":
+      return "This domain is not authorized in Firebase Authentication.";
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+      return "Invalid email or password.";
+    default:
+      return error?.message ?? "Something went wrong while signing in.";
+  }
 }
 
 async function loadHtml2Pdf() {
@@ -186,6 +222,13 @@ async function initializeFirebase() {
   state.firebaseReady = true;
   elements.firebaseStatus.textContent = "System ready";
   elements.firebaseStatus.classList.add("ready");
+  setAuthBusy(false);
+
+  try {
+    await setPersistence(state.auth, browserLocalPersistence);
+  } catch (error) {
+    console.warn("Unable to set auth persistence:", error);
+  }
 
   onAuthStateChanged(state.auth, async (user) => {
     state.user = user;
@@ -209,10 +252,13 @@ async function initializeFirebase() {
     const password = elements.authPassword.value.trim();
 
     try {
+      setAuthBusy(true);
       await signInWithEmailAndPassword(state.auth, email, password);
       elements.authMessage.textContent = "Logged in.";
     } catch (error) {
-      elements.authMessage.textContent = error.message;
+      elements.authMessage.textContent = authErrorMessage(error);
+    } finally {
+      setAuthBusy(false);
     }
   });
 
@@ -221,15 +267,23 @@ async function initializeFirebase() {
     const password = elements.authPassword.value.trim();
 
     try {
+      setAuthBusy(true);
       await createUserWithEmailAndPassword(state.auth, email, password);
       elements.authMessage.textContent = "Account created.";
     } catch (error) {
-      elements.authMessage.textContent = error.message;
+      elements.authMessage.textContent = authErrorMessage(error);
+    } finally {
+      setAuthBusy(false);
     }
   });
 
   elements.logoutButton.addEventListener("click", async () => {
-    await signOut(state.auth);
+    try {
+      setAuthBusy(true);
+      await signOut(state.auth);
+    } finally {
+      setAuthBusy(false);
+    }
   });
 }
 
@@ -772,7 +826,9 @@ elements.cashAdvance.addEventListener("input", updateTotals);
 renderRows();
 renderSavedReports();
 toggleAuthenticatedView(false);
+setAuthBusy(true);
 initializeFirebase().catch((error) => {
   elements.firebaseStatus.textContent = "System error";
   elements.authMessage.textContent = error.message;
+  setAuthBusy(true);
 });
